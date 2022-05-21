@@ -216,6 +216,8 @@ GEM
     mercenary (0.3.6)
     minitest (5.14.4)
     multipart-post (2.1.1)
+    nokogiri (1.11.2-arm64-darwin)
+      racc (~> 1.4)
     nokogiri (1.11.2-x86_64-darwin)
       racc (~> 1.4)
     octokit (4.20.0)
@@ -260,6 +262,7 @@ GEM
     zeitwerk (2.4.2)
 
 PLATFORMS
+  universal-darwin-21
   x86_64-darwin-18
 
 DEPENDENCIES
