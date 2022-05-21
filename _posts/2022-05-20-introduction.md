@@ -42,7 +42,7 @@ For example, you cannot construct the set of all sets (leading to a paradox),
 because Reset doesn't allow recursion or loops, but more about that in later posts.
 
 #### Set operators
-We can create other number sets by combining the 3 set operators, *intersect* `&`, *union* `|` and *not* `!`.
+We can create other number sets by combining 3 set operators, *intersect* `&`, *union* `|` and *not* `!`.
 
 Here are some examples:
 ```javascript
