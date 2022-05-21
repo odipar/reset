@@ -164,28 +164,28 @@ The internal Reset representation of that same program would be:
 } & {
  boolean: _
  number: _
-  <"a": _
+ <"a": _
  "a": >2
  >"a" & <"b": _
  "b": 10|11|12
  >"b" & <"c": _
  "c": 5
- ">c" _
+ >"c": _
 }
 ```
-When Reset intersects two maps, it will intersect all the values between the two maps, that have intersecting keys.
+When Reset intersects two maps, it will intersect all the values between the two maps, that have intersecting keys:
 
 ```javascript
 {
  boolean: _ & _             == _
  number: _ & _              == _
-  <"a": _ & _               == _
+ <"a": _ & _               == _
  "a": (1 + 2) & >2          == 3
  >"a" & <"b": _ & _         == _
  "b": (3 * 4) & (10|11|12)  == 12
  >"b" & <"c": _ & _         == _
  "c": _ & 5                 == 5
- ">c" _ & _                 == _
+ >"c": _ & _                == _
 }
 ```
 #### What's next
