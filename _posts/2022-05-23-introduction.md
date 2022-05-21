@@ -1,6 +1,6 @@
 ---
 layout: post
 author: Robbert van Dalen
-title: "An introductioni to ReSeT"
+title: "An introduction to ReSeT"
 ---
-
+First post
