@@ -3,21 +3,25 @@ layout: post
 author: Robbert van Dalen
 title: "An introduction"
 ---
-I like to think about alternative ways of expressing computations.
+I like to think about alternative ways of expressing programs.
 With the Reset language, I'm experimenting with a new approach that is based on sets.
 
-Reset is greatly inspired by the CUE language, which I stumbled upon early this year.
+Reset is heavily inspired by the CUE language, which I stumbled upon early this year.
 What sets Reset apart from CUE however, is that Reset is more focussed on semantics, and less on use cases.
-Please take a look at the excellent CUE documentation to get a better idea about the theory behind Reset.
+Please take a look at the excellent [CUE documentation](https://cuelang.org/docs/concepts/logic/) to get a 
+better idea about the theory behind Reset. 
+
+It is my hope that Reset will help you understand CUE better and vice versa (although they are different).
+
 
 #### Sets
 Let's first start with a fundamental property of all values in Reset:
 
-`every value in Reset is a Set of key:value pairs`
+`every value in Reset is a set of key:value pairs`
 
 ..or alternatively: 
 
-`every value in Reset is a Map that maps keys to values`
+`every value in Reset is a map that maps keys to values`
 
 To make Reset easier to implement, I've constrained keys to be values of type `boolean`, `number` or `string`
 (this restriction may be removed in the future).
@@ -29,16 +33,16 @@ And like CUE, I believe this set-theoretic approach to types to be both natural 
 Let's see!
                                                                                          
 #### Numbers
-In Reset, `number` represents the *infinite* Set of all numbers. 
-Likewise, `1` is synonymous with the *finite* Set that contains only the single number `1`.
-We can also specify other infinite Sets of numbers, for example, all numbers that are greater or equal to 3 (`>=3`).
+In Reset, the `number` value represents the *infinite* set of all numbers. 
+Likewise, `1` is synonymous with the *finite* set that contains only the single number `1`.
+We can also specify other infinite sets of numbers, for example, all numbers that are greater or equal to 3 (`>=3`).
 
-It is important to understand that, although you can specify infinite Sets in Reset, you can only do so 'constructively'.
+It is important to understand that, although you can specify infinite sets in Reset, you can only do so 'constructively'.
 For example, you cannot construct the set of all sets (leading to a paradox), 
 because Reset doesn't allow recursion or loops, but more about that in later posts.
 
 #### Set operators
-We can create other number sets by combining 3 set operators, AND `&`, OR `|` and NOT `!`.
+We can create other number sets by combining the 3 set operators, *intersect* `&`, *union* `|` and *not* `!`.
 
 Here are some examples:
 ```javascript
@@ -49,7 +53,9 @@ number & !4 == <4|>4
 !(1|2) & number == <1|(>1 & <2)|>2
 1 & 2 == _|_
 ```           
-Notice the bottom(`_|_`) value. Similar to CUE, this value indicates the empty Set (of numbers).
+
+#### Bottom
+Notice the bottom `_|_` value. Similar to CUE, this value indicates the empty set (of numbers).
 So to check whether a value `v` is of a certain 'type' `t` we just need to intersect `v & t`.
 If the result is `_|_` we know that `v` is not of 'type' `t` (or `v` is not a subset of `t`).
 
@@ -66,13 +72,13 @@ Here are some examples:
 <10 / >2 == <5
 3 / 0 == _|_
 ```
-To prevent loss of precision with division, I've decided single numbers to be rationals in Reset,
+Unlike CUE, and to prevent loss of precision with division, I've decided single numbers to be rationals in Reset,
 with division by zero resulting in `_|_` (a natural result, in my opinion).
 
 #### Strings
-The *infinite* Set of all strings is represented by `string` in Reset.
+The *infinite* set of all strings is represented by the `string` value in Reset.
 Strings work similarly as numbers, as you can specify single strings, or infinite sets of strings.
-As with numbers, set operators can use to create new string sets:
+As with numbers, set operators can be used to create new string sets:
 
 ```javascript
 "a"|"b"|"c" & "b"|"c"|"d" == "b"|"c"
@@ -85,15 +91,15 @@ string & !"d" == <"d"|>"d"
 There are currently no other operators defined on strings, except set operators.
 
 #### Booleans
-And finally we have the *finite* `boolean` set, which contains `true` and `false`. 
+And finally we have the  `boolean` value, which represents the *finite* set containing `true` and `false`. 
 
 #### Top
-Top `_` represents all possible values in Reset, currently the *union* of `boolean | number | string`. 
-An interesting property of `_` is that its negation is `_|_` and vice-versa.
-Note that the *intersection* of `boolean & number & string` is `_|_`.
+Top `_` represents all possible values in Reset, or the union of `boolean | number | string`. 
+An interesting property of `_` is that its negation is `_|_` and vice versa.
+Note that the intersection of either `boolean & number & string` is `_|_`.
 
 #### Maps
-Remember that every value in Reset is a Map that maps keys to values (a set of key:value pairs). To define a
+Remember that every value in Reset is a map that maps keys to values (a set of key:value pairs). To define a
 map in Reset, you need to create a list of key:value pairs and put them in between curly braces:
 
 ```javascript
@@ -108,8 +114,8 @@ map in Reset, you need to create a list of key:value pairs and put them in betwe
 Note that keys are sets themselves, but keys contained by the pairs in a map should not intersect (if they do, they are merged into another key:value pair).
 
 #### Canonical representation
-I've already said that every value is a Map in Reset, but what about `boolean`, `number` and `string`: are they Maps too?
-Yes they are, and to understand why, we need to switch over to canonical representation mode.
+I've already said that every value is a map in Reset, but what about `boolean`, `number` and `string`: are they maps too?
+Indeed they are, and to understand why, we need to switch over to canonical representation mode.
 
 Here is a canonical representation of the number set `1|2`:
 ```javascript
@@ -143,7 +149,7 @@ keys other than 'concrete' strings. In that sense, Reset is a superset of CUE (i
 
 Here is a simple CUE program:
 ```javascript 
-{ a: 1 + 2, b: 3 * 4 } & { a: >2, b: 10|11|12, c: 3 } == { a: 3, b: 12, c: 5 }
+{ a: 1 + 2, b: 3 * 4 } & { a: >2, b: 10|11|12, c: 5 } == { a: 3, b: 12, c: 5 }
 ```
 The internal Reset representation of that same program would be:
 ```javascript
