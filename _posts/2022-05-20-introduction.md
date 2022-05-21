@@ -179,7 +179,7 @@ When Reset intersects two maps, it will intersect all the values between the two
 {
  boolean: _ & _             == _
  number: _ & _              == _
- <"a": _ & _               == _
+ <"a": _ & _                == _
  "a": (1 + 2) & >2          == 3
  >"a" & <"b": _ & _         == _
  "b": (3 * 4) & (10|11|12)  == 12
