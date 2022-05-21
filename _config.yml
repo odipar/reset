@@ -1,6 +1,6 @@
-title: Manikin
+title: ReSeT
 description:
-baseurl: /manikin
+baseurl: /reset
 
 markdown: kramdown
 theme: minima
