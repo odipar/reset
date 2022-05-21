@@ -1,0 +1,466 @@
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Concurrent Worlds | Manikin</title>
+<meta name="generator" content="Jekyll v3.9.0" />
+<meta property="og:title" content="Concurrent Worlds" />
+<meta name="author" content="Robbert van Dalen" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="We depend on version control, especially when we work on a code base that is managed by a team of people." />
+<meta property="og:description" content="We depend on version control, especially when we work on a code base that is managed by a team of people." />
+<link rel="canonical" href="http://localhost:4000/manikin/2021/03/20/concurrent-worlds.html" />
+<meta property="og:url" content="http://localhost:4000/manikin/2021/03/20/concurrent-worlds.html" />
+<meta property="og:site_name" content="Manikin" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2021-03-20T00:00:00+01:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Concurrent Worlds" />
+<script type="application/ld+json">
+{"description":"We depend on version control, especially when we work on a code base that is managed by a team of people.","headline":"Concurrent Worlds","dateModified":"2021-03-20T00:00:00+01:00","datePublished":"2021-03-20T00:00:00+01:00","url":"http://localhost:4000/manikin/2021/03/20/concurrent-worlds.html","author":{"@type":"Person","name":"Robbert van Dalen"},"mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/manikin/2021/03/20/concurrent-worlds.html"},"@type":"BlogPosting","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/manikin/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/manikin/feed.xml" title="Manikin" />
+</head>
+<body><header class="site-header">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/manikin/">Manikin</a></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Concurrent Worlds</h1>
+    <p class="post-meta"><time class="dt-published" datetime="2021-03-20T00:00:00+01:00" itemprop="datePublished">
+        Mar 20, 2021
+      </time>• 
+          <span itemprop="author" itemscope itemtype="http://schema.org/Person">
+            <span class="p-author h-card" itemprop="name">Robbert van Dalen</span></span></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>We <em>depend</em> on version control, especially when we work on a code base that is managed by a team of people.</p>
+
+<p>We need version control because of <em>concurrency</em>: we want team members to work on different parts of the 
+source code, without blocking each other.</p>
+
+<p>But concurrency comes at a price: we have to be more careful when <em>committing</em> concurrent work.
+With concurrency, we have to think about consensus and solving potential conflicts. Version control systems 
+help us perform such difficult tasks.</p>
+
+<p>But why don’t we exercise the same level of control over <em>application state</em>? 
+Surely the same concurrency patterns apply when dealing with state.</p>
+
+<h4 id="snapshots">Snapshots</h4>
+<p>Let’s draw a comparison between source code and application state. Is there a difference?</p>
+
+<p>Sure there is:</p>
+
+<ul>
+  <li>
+    <p>Source code is text that is typically stored in a hierarchical filesystem in different files and directories.</p>
+  </li>
+  <li>
+    <p>Application state is typically a big pile of objects, with references to other (piles of) objects, stored in 
+(volatile) computer memory.</p>
+  </li>
+</ul>
+
+<p>Holistically however, there is no difference: both can be serialized into big blobs of digital data (also called 
+snapshots or commits). <a href="https://git-scm.com">GIT</a> exactly follows this snapshot approach to version control.</p>
+
+<h4 id="detail-level">Detail Level</h4>
+
+<p>But while GIT only stores commits at the ‘blob level’, the <em>actual</em> version control happens at the ‘bit 
+level’.</p>
+
+<p>It is amazing that, with only snapshots (and some simple bookkeeping) we can already answer so many 
+detailed questions about our source code:</p>
+
+<ul>
+  <li>Are there any new files in a commit, compared to its previous (parent) commit?</li>
+  <li>Are there any conflicts between two commits?</li>
+  <li>What are the differences between the three versions of the same file? (three-way merge)</li>
+  <li>Who is the author of the commit?</li>
+</ul>
+
+<h4 id="application-state">Application State</h4>
+
+<p>Then what are the questions we would like to ask when dealing with application state?</p>
+
+<ul>
+  <li>Are there any new objects in this commit?</li>
+  <li>What objects changed between commits?</li>
+  <li>Are there any conflicts between objects?</li>
+  <li>Are there any data dependencies that would be violated when we merge two commits?</li>
+</ul>
+
+<p>As it turns out, some of these questions cannot be answered with a simple snapshot model, so
+we need an alternative approach.</p>
+
+<h4 id="manikin">Manikin</h4>
+<p><a href="https://github.com/odipar/jmanikin">Manikin</a> is a framework that enables you to precisely control concurrent 
+application state that goes beyond GIT’s capabilities.</p>
+
+<p>I’ve been working on Manikin for over 3 years, but I have only recently started writing about the general design 
+of Manikin to gather some feedback. So if you want to understand more about Manikin’s design, please read 
+<a href="https://odipar.github.io/manikin/2021/03/19/my-first-post.html">this</a> first.
+(feedback would be much appreciated!)</p>
+
+<p>In this installment I will go into more detail on how to manage concurrent state with Manikin.</p>
+
+<h4 id="banking">Banking</h4>
+<p>Let’s start with a compelling example, which is an unrealistic banking application written in 
+non-idiomatic Scala code:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Account</span><span class="o">(</span><span class="k">var</span> <span class="n">balance</span><span class="k">:</span> <span class="kt">Double</span> <span class="o">=</span> <span class="mf">0.0</span><span class="o">)</span>
+
+<span class="k">def</span> <span class="nf">transfer</span><span class="o">(</span><span class="n">from</span><span class="k">:</span> <span class="kt">Account</span><span class="o">,</span> <span class="n">to</span><span class="k">:</span> <span class="kt">Account</span><span class="o">,</span> <span class="n">amount</span><span class="k">:</span> <span class="kt">Double</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
+   <span class="nf">if</span> <span class="o">(</span><span class="n">amount</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="o">)</span>         <span class="nv">sys</span><span class="o">.</span><span class="py">error</span><span class="o">(</span><span class="s">"amount should be positive"</span><span class="o">)</span>
+   <span class="nf">if</span> <span class="o">(</span><span class="n">from</span> <span class="o">==</span> <span class="n">to</span><span class="o">)</span>            <span class="nv">sys</span><span class="o">.</span><span class="py">error</span><span class="o">(</span><span class="s">"same accounts"</span><span class="o">)</span>
+   <span class="nf">if</span> <span class="o">(</span><span class="nv">from</span><span class="o">.</span><span class="py">balance</span> <span class="o">&lt;</span> <span class="n">amount</span><span class="o">)</span> <span class="nv">sys</span><span class="o">.</span><span class="py">error</span><span class="o">(</span><span class="s">"not enough balance"</span><span class="o">)</span>
+   
+   <span class="nv">from</span><span class="o">.</span><span class="py">balance</span> <span class="o">-=</span> <span class="n">amount</span>
+   <span class="nv">to</span><span class="o">.</span><span class="py">balance</span>   <span class="o">+=</span> <span class="n">amount</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Banking is easy right? We have accounts with a balance, and we can transfer money between them.</p>
+
+<p>But our example is already a source of many intricate concurrency bugs. (can you spot them?)</p>
+
+<p>Not surprisingly, this example pops up in many textbooks that discuss concurrency. It demonstrates interesting 
+concurrency problems that may not be immediately obvious.</p>
+
+<p>Of course, the biggest source of bugs is when concurrent processes mutate data <em>in-place</em> without any coordination.
+Installing locks is one way to combat such bugs, but locks also severely impacts performance: processes will start 
+blocking each other in their attempt to acquire the same locks.</p>
+
+<h4 id="databases">Databases</h4>
+<p>Another option is the Multi Version Concurrency Control 
+(<a href="https://en.wikipedia.org/wiki/Multiversion_concurrency_control">MVCC</a>) approach that is taken by many modern
+databases such as Postgres and Oracle. The MVCC model is very similar to GIT’s snapshot model, but not exactly.</p>
+
+<p>And with databases, there is also a wide range of concurrency trade-offs to consider: do we want 
+<a href="https://wiki.postgresql.org/wiki/SSI">Serializable Snapshot Isolation</a> 
+(slower, but correct), or are we OK with just Snapshot Isolation (faster, but with caveats). Manikin gives 
+you all the options that databases give you, but than on the application level.</p>
+
+<h4 id="rewrite">Rewrite</h4>
+<p>Let’s rewrite our example in the <em>Manikin</em> style, starting with accounts:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">Account</span><span class="o">(</span><span class="n">balance</span><span class="k">:</span> <span class="kt">Double</span> <span class="o">=</span> <span class="mf">0.0</span><span class="o">)</span>
+
+<span class="k">case</span> <span class="k">class</span> <span class="nc">AccountId</span><span class="o">(</span><span class="n">id</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Id</span><span class="o">[</span><span class="kt">Account</span><span class="o">]</span> <span class="o">{</span> 
+   <span class="k">def</span> <span class="nf">init</span> <span class="k">=</span> <span class="nc">Account</span><span class="o">()</span> 
+<span class="o">}</span>
+
+<span class="k">trait</span> <span class="nc">AccountMsg</span> <span class="k">extends</span> <span class="nc">ScalaMessage</span><span class="o">[</span><span class="kt">AccountId</span>, <span class="kt">Account</span>, <span class="kt">Unit</span><span class="o">]</span>
+
+<span class="k">case</span> <span class="k">class</span> <span class="nc">Withdraw</span><span class="o">(</span><span class="n">amount</span><span class="k">:</span> <span class="kt">Double</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">AccountMsg</span> <span class="o">{</span>
+   <span class="k">def</span> <span class="nf">scala</span> <span class="k">=</span> 
+      <span class="n">pre</span> <span class="o">{</span> <span class="n">amount</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="nv">obj</span><span class="o">.</span><span class="py">balance</span> <span class="o">&gt;</span> <span class="n">amount</span> <span class="o">}.</span>
+      <span class="n">app</span> <span class="o">{</span> <span class="nv">obj</span><span class="o">.</span><span class="py">copy</span><span class="o">(</span><span class="n">balance</span> <span class="k">=</span> <span class="nv">obj</span><span class="o">.</span><span class="py">balance</span> <span class="o">-</span> <span class="n">amount</span><span class="o">)</span> <span class="o">}.</span>
+      <span class="n">eff</span> <span class="o">{</span> <span class="o">}.</span>
+      <span class="n">pst</span> <span class="o">{</span> <span class="nv">obj</span><span class="o">.</span><span class="py">balance</span> <span class="o">==</span> <span class="nv">old</span><span class="o">.</span><span class="py">balance</span> <span class="o">-</span> <span class="n">amount</span> <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="k">case</span> <span class="k">class</span> <span class="nc">Deposit</span><span class="o">(</span><span class="n">amount</span><span class="k">:</span> <span class="kt">Double</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">AccountMsg</span> <span class="o">{</span>
+   <span class="k">def</span> <span class="nf">scala</span> <span class="k">=</span>
+      <span class="n">pre</span> <span class="o">{</span> <span class="n">amount</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">}.</span>
+      <span class="n">app</span> <span class="o">{</span> <span class="nv">obj</span><span class="o">.</span><span class="py">copy</span><span class="o">(</span><span class="n">balance</span> <span class="k">=</span> <span class="nv">obj</span><span class="o">.</span><span class="py">balance</span> <span class="o">+</span> <span class="n">amount</span><span class="o">)</span> <span class="o">}.</span>
+      <span class="n">eff</span> <span class="o">{</span> <span class="o">}.</span>
+      <span class="n">pst</span> <span class="o">{</span> <span class="nv">obj</span><span class="o">.</span><span class="py">balance</span> <span class="o">==</span> <span class="nv">old</span><span class="o">.</span><span class="py">balance</span> <span class="o">+</span> <span class="n">amount</span> <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>That’s … very different. What’s going on?</p>
+
+<p>In Manikin we can only manipulate (immutable!) objects by dispatching messages via Worlds.
+In turn, each message dispatch goes through 4 additional stages of execution:</p>
+
+<ol>
+  <li>
+    <p><strong>pre</strong>(condition): checks whether conditions hold <em>before</em> the state transition</p>
+  </li>
+  <li>
+    <p><strong>app</strong>(ly): <em>transitions</em> the current object state to a new object state</p>
+  </li>
+  <li>
+    <p><strong>eff</strong>(ect): <em>send</em> messages to other objects, and (optionally) return a <em>result</em></p>
+  </li>
+  <li>
+    <p><strong>p</strong>(o)<strong>st</strong>(condition): checks whether conditions hold <em>after</em> the state transition (with access to old state)</p>
+  </li>
+</ol>
+
+<p>After success, an event is written to an append-only log, stating that the message dispatch was indeed successful.
+As such, we can think of a message as being a small 4-stage mini-transaction.</p>
+
+<h4 id="deposit-money">Deposit Money</h4>
+<p>So let’s deposit some money into the world and see what happens:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">a1</span> <span class="k">=</span> <span class="nc">AccountId</span><span class="o">(</span><span class="s">"A1"</span><span class="o">)</span>
+
+<span class="k">val</span> <span class="nv">world</span> <span class="k">=</span> <span class="nc">EventWorld</span><span class="o">().</span>
+   <span class="nf">send</span><span class="o">(</span><span class="n">a1</span><span class="o">,</span> <span class="nc">Deposit</span><span class="o">(</span><span class="mi">50</span><span class="o">)).</span>
+   <span class="nf">send</span><span class="o">(</span><span class="n">a1</span><span class="o">,</span> <span class="nc">Withdraw</span><span class="o">(</span><span class="mi">30</span><span class="o">)).</span>
+   <span class="n">world</span>
+
+<span class="nf">println</span><span class="o">(</span><span class="nv">world</span><span class="o">.</span><span class="py">obj</span><span class="o">(</span><span class="n">a1</span><span class="o">).</span><span class="py">value</span><span class="o">)</span> <span class="c1">// Account(20.0)</span>
+<span class="nf">println</span><span class="o">(</span><span class="n">world</span><span class="o">)</span>
+<span class="cm">/*
+SENT Deposit(50.0) =&gt; AccountId(A1):0
+  PRE:
+  EFF: ()
+  PST:
+    READ AccountId(A1):1
+    READ AccountId(A1):0
+
+SENT Withdraw(30.0) =&gt; AccountId(A1):1
+  PRE:
+    READ AccountId(A1):1
+  EFF: ()
+  PST:
+    READ AccountId(A1):2
+    READ AccountId(A1):1
+*/</span>
+</code></pre></div></div>
+<p>As you can see, the EventWorld has captured all messages that have been sent and ‘turned’ them into events. 
+Next to that, it also tracked all the <em>reads</em> that were issued in the pre- and post-conditions.</p>
+
+<p>Also notice the version numbers that are post-fixed to each account id. All this tracking and tracing happens in 
+Manikin’s ‘backend’. Exactly because Manikin stores a full record of what happened, it is able to efficiently compare, 
+merge and rebase concurrent state.</p>
+
+<h4 id="transfer-money">Transfer Money</h4>
+<p>But before we are going to combine concurrent state, we extend our example with a money transfer:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">TransferId</span><span class="o">(</span><span class="n">id</span><span class="k">:</span> <span class="kt">Long</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Id</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span> <span class="o">{</span>
+   <span class="k">def</span> <span class="nf">init</span> <span class="k">=</span> <span class="o">{</span> <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="k">trait</span> <span class="nc">TransferMsg</span> <span class="k">extends</span> <span class="nc">ScalaMessage</span><span class="o">[</span><span class="kt">TransferId</span>, <span class="kt">Unit</span>, <span class="kt">Unit</span><span class="o">]</span>
+
+<span class="k">case</span> <span class="k">class</span> <span class="nc">Open</span><span class="o">(</span><span class="n">initial</span><span class="k">:</span> <span class="kt">Double</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">AccountMsg</span> <span class="o">{</span>
+   <span class="k">def</span> <span class="nf">scala</span> <span class="k">=</span>
+      <span class="n">pre</span> <span class="o">{</span> <span class="n">initial</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">}.</span>
+      <span class="n">app</span> <span class="o">{</span> <span class="nv">obj</span><span class="o">.</span><span class="py">copy</span><span class="o">(</span><span class="n">balance</span> <span class="k">=</span> <span class="n">initial</span><span class="o">)</span> <span class="o">}.</span>
+      <span class="n">eff</span> <span class="o">{</span> <span class="o">}.</span>
+      <span class="n">pst</span> <span class="o">{</span> <span class="nv">obj</span><span class="o">.</span><span class="py">balance</span> <span class="o">==</span> <span class="n">initial</span> <span class="o">}</span> 
+<span class="o">}</span>
+
+<span class="k">case</span> <span class="k">class</span> <span class="nc">Book</span><span class="o">(</span><span class="n">from</span><span class="k">:</span> <span class="kt">AccountId</span><span class="o">,</span> <span class="n">to</span><span class="k">:</span> <span class="kt">AccountId</span><span class="o">,</span> <span class="n">amount</span><span class="k">:</span> <span class="kt">Double</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">TransferMsg</span> <span class="o">{</span>
+   <span class="k">def</span> <span class="nf">scala</span> <span class="k">=</span> 
+      <span class="n">pre</span> <span class="o">{</span> <span class="n">from</span> <span class="o">!=</span> <span class="n">to</span> <span class="o">}.</span>
+      <span class="n">app</span> <span class="o">{</span> <span class="o">}.</span>
+      <span class="n">eff</span> <span class="o">{</span> <span class="nf">send</span><span class="o">(</span><span class="n">from</span><span class="o">,</span> <span class="nc">Deposit</span><span class="o">(</span><span class="n">amount</span><span class="o">));</span> <span class="nf">send</span><span class="o">(</span><span class="n">to</span><span class="o">,</span> <span class="nc">Withdraw</span><span class="o">(</span><span class="n">amount</span><span class="o">))</span> <span class="o">}.</span>
+      <span class="n">pst</span> <span class="o">{</span> <span class="nf">obj</span><span class="o">(</span><span class="n">from</span><span class="o">).</span><span class="py">balance</span> <span class="o">+</span> <span class="nf">obj</span><span class="o">(</span><span class="n">to</span><span class="o">).</span><span class="py">balance</span> <span class="o">==</span> <span class="nf">old</span><span class="o">(</span><span class="n">from</span><span class="o">).</span><span class="py">balance</span> <span class="o">+</span> <span class="nf">old</span><span class="o">(</span><span class="n">to</span><span class="o">).</span><span class="py">balance</span> <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>Notice that the Book message has a composite effect: it sends two additional messages to other accounts.</p>
+
+<h4 id="book">Book</h4>
+<p>Let’s see what happens when we book a transfer:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">a1</span> <span class="k">=</span> <span class="nc">AccountId</span><span class="o">(</span><span class="s">"A1"</span><span class="o">)</span>
+<span class="k">val</span> <span class="nv">a2</span> <span class="k">=</span> <span class="nc">AccountId</span><span class="o">(</span><span class="s">"A2"</span><span class="o">)</span>
+<span class="k">val</span> <span class="nv">t1</span> <span class="k">=</span> <span class="nc">TransferId</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span>
+
+<span class="k">val</span> <span class="nv">world</span> <span class="k">=</span> <span class="nc">EventWorld</span><span class="o">().</span>
+   <span class="nf">send</span><span class="o">(</span><span class="n">a1</span><span class="o">,</span> <span class="nc">Open</span><span class="o">(</span><span class="mi">50</span><span class="o">)).</span>
+   <span class="nf">send</span><span class="o">(</span><span class="n">a2</span><span class="o">,</span> <span class="nc">Open</span><span class="o">(</span><span class="mi">80</span><span class="o">)).</span>
+   <span class="nf">send</span><span class="o">(</span><span class="n">t1</span><span class="o">,</span> <span class="nc">Book</span><span class="o">(</span><span class="n">a1</span><span class="o">,</span> <span class="n">a2</span><span class="o">,</span> <span class="mi">30</span><span class="o">)).</span>
+   <span class="n">world</span>
+
+<span class="nf">println</span><span class="o">(</span><span class="nv">world</span><span class="o">.</span><span class="py">obj</span><span class="o">(</span><span class="n">a1</span><span class="o">).</span><span class="py">value</span><span class="o">)</span>  <span class="c1">// Account(20.0)</span>
+<span class="nf">println</span><span class="o">(</span><span class="nv">world</span><span class="o">.</span><span class="py">obj</span><span class="o">(</span><span class="n">a2</span><span class="o">).</span><span class="py">value</span><span class="o">)</span>  <span class="c1">// Account(110.0)</span>
+<span class="nf">println</span><span class="o">(</span><span class="nv">world</span><span class="o">.</span><span class="py">events</span><span class="o">.</span><span class="py">iterator</span><span class="o">.</span><span class="py">next</span><span class="o">.</span><span class="py">prettyPrint</span><span class="o">)</span>
+<span class="cm">/*
+SENT Book(AccountId(A1),AccountId(A2),30.0) =&gt; TransferId(1):0
+  PRE:
+  EFF: ()
+    SENT Withdraw(30.0) =&gt; AccountId(A1):1
+      PRE:
+        READ AccountId(A1):1
+      EFF: ()
+      PST:
+        READ AccountId(A1):2
+        READ AccountId(A1):1
+    SENT Deposit(30.0) =&gt; AccountId(A2):1
+      PRE:
+      EFF: ()
+      PST:
+        READ AccountId(A2):2
+        READ AccountId(A2):1
+  PST:
+    READ AccountId(A1):2
+    READ AccountId(A2):2
+    READ AccountId(A1):1
+    READ AccountId(A2):1
+ */</span>
+</code></pre></div></div>
+<p>What we see is that Manikin also keeps a detailed record of composite (recursive) effects.</p>
+
+<h4 id="conflicting-worlds">Conflicting Worlds</h4>
+<p>Until now, our examples didn’t show any concurrency problems. That’s because messages were dispatched in a
+single <em>thread</em> of control.</p>
+
+<p>To complicate matters, we are going to spawn multiple concurrent (and immutable!) worlds and then 
+try to reconcile (merge) them.</p>
+
+<p>Merging worlds is easy when there are no conflicts, but what kind of conflicts can we actually expect?</p>
+
+<ol>
+  <li>
+    <p><strong>Write/Write</strong> conflicts: An object has <em>divergent</em> messages sent to it, so the resulting states 
+are assumed also to be divergent.</p>
+  </li>
+  <li>
+    <p><strong>Read/Write</strong> conflicts: An object’s state has been read at a certain point, but has been <em>invalidated</em> by a more
+recent state.</p>
+  </li>
+</ol>
+
+<h4 id="merging-worlds">Merging Worlds</h4>
+<p>Our first trivial example demonstrates the merging of two concurrent Worlds without any conflicts:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">world1</span> <span class="k">=</span> <span class="nc">EventWorld</span><span class="o">().</span>
+   <span class="nf">send</span><span class="o">(</span><span class="n">a1</span><span class="o">,</span> <span class="nc">Open</span><span class="o">(</span><span class="mi">50</span><span class="o">)).</span>
+   <span class="n">world</span>
+
+<span class="k">val</span> <span class="nv">world2</span> <span class="k">=</span> <span class="nc">EventWorld</span><span class="o">().</span>
+   <span class="nf">send</span><span class="o">(</span><span class="n">a2</span><span class="o">,</span> <span class="nc">Open</span><span class="o">(</span><span class="mi">80</span><span class="o">)).</span>
+   <span class="n">world</span>
+
+<span class="k">val</span> <span class="nv">world3</span> <span class="k">=</span> <span class="n">world1</span> <span class="n">merge</span> <span class="n">world2</span>
+
+<span class="nf">println</span><span class="o">(</span><span class="nv">world3</span><span class="o">.</span><span class="py">obj</span><span class="o">(</span><span class="n">a1</span><span class="o">).</span><span class="py">value</span><span class="o">)</span>  <span class="c1">// Account(50.0)</span>
+<span class="nf">println</span><span class="o">(</span><span class="nv">world3</span><span class="o">.</span><span class="py">obj</span><span class="o">(</span><span class="n">a2</span><span class="o">).</span><span class="py">value</span><span class="o">)</span>  <span class="c1">// Account(80.0)</span>
+</code></pre></div></div>
+<p>As expected, there are no conflicts when merging, because either World operates on different accounts.</p>
+
+<p>But when we transfer money that target the same accounts, Manikin detects a Write/Write conflict:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">t1</span> <span class="k">=</span> <span class="nc">TransferId</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span>
+<span class="k">val</span> <span class="nv">t2</span> <span class="k">=</span> <span class="nc">TransferId</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span>
+
+<span class="k">val</span> <span class="nv">world4</span> <span class="k">=</span> <span class="n">world3</span><span class="o">.</span>
+   <span class="nf">send</span><span class="o">(</span><span class="n">t1</span><span class="o">,</span> <span class="nc">Book</span><span class="o">(</span><span class="n">a1</span><span class="o">,</span> <span class="n">a2</span><span class="o">,</span> <span class="mi">20</span><span class="o">)).</span>
+   <span class="n">world</span>
+
+<span class="k">val</span> <span class="nv">world5</span> <span class="k">=</span> <span class="n">world3</span><span class="o">.</span>
+   <span class="nf">send</span><span class="o">(</span><span class="n">t1</span><span class="o">,</span> <span class="nc">Book</span><span class="o">(</span><span class="n">a1</span><span class="o">,</span> <span class="n">a2</span><span class="o">,</span> <span class="mi">30</span><span class="o">)).</span>
+   <span class="n">world</span>
+
+<span class="k">try</span> <span class="o">{</span> 
+   <span class="k">val</span> <span class="nv">world6</span> <span class="k">=</span> <span class="n">world4</span> <span class="n">merge</span> <span class="n">world5</span> <span class="c1">// FAILS</span>
+<span class="o">}</span>
+<span class="k">catch</span> <span class="o">{</span> 
+   <span class="k">case</span> <span class="n">e</span><span class="k">:</span> <span class="kt">Exception</span> <span class="o">=&gt;</span> <span class="nf">println</span><span class="o">(</span><span class="n">e</span><span class="o">)</span> 
+   <span class="c1">// CANNOT MERGE: WRITE/WRITE INTERSECTION Set(AccountId(A1), AccountId(A2)) </span>
+<span class="o">}</span> 
+</code></pre></div></div>
+<p>And indeed, both world4 and world5 have transferred money between the same accounts, so their write <em>sets</em> intersect.</p>
+
+<h4 id="rebasing-worlds">Rebasing Worlds</h4>
+<p>But not all is lost as Manikin also supports a <em>rebase</em> operation. Rebasing effectively replays or resends messages
+from the point where Worlds diverge from their common ancestor, so it is more expensive than merging.</p>
+
+<p>A standard practice is to first try a merge (fast path), and when that doesn’t work, do a rebase (slow path).
+When a rebase is successful, we are sure that the final merge will be successful too.</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">try</span> <span class="o">{</span>
+   <span class="k">val</span> <span class="nv">world6</span> <span class="k">=</span> <span class="n">world4</span> <span class="n">merge</span> <span class="n">world5</span> <span class="c1">// FAILS</span>
+<span class="o">}</span> 
+<span class="k">catch</span> <span class="o">{</span> 
+   <span class="k">case</span> <span class="n">e</span><span class="k">:</span> <span class="kt">Exception</span> <span class="o">=&gt;</span> <span class="o">{</span>
+      <span class="k">try</span> <span class="o">{</span>
+         <span class="k">val</span> <span class="nv">world7</span> <span class="k">=</span> <span class="n">world5</span> <span class="n">rebase</span> <span class="n">world4</span>  <span class="c1">// SUCCEEDS</span>
+         <span class="k">val</span> <span class="nv">world8</span> <span class="k">=</span> <span class="n">world4</span> <span class="n">merge</span> <span class="n">world7</span>   <span class="c1">// SUCCEEDS</span>
+         
+         <span class="nf">println</span><span class="o">(</span><span class="nv">world8</span><span class="o">.</span><span class="py">obj</span><span class="o">(</span><span class="n">a1</span><span class="o">).</span><span class="py">value</span><span class="o">)</span> <span class="c1">// Account(0.0)</span>
+         <span class="nf">println</span><span class="o">(</span><span class="nv">world8</span><span class="o">.</span><span class="py">obj</span><span class="o">(</span><span class="n">a2</span><span class="o">).</span><span class="py">value</span><span class="o">)</span> <span class="c1">// Account(130.0)</span>
+      <span class="o">}</span>
+      <span class="k">case</span> <span class="n">e</span><span class="k">:</span> <span class="kt">Exception</span> <span class="o">=&gt;</span> <span class="nf">println</span><span class="o">(</span><span class="n">e</span><span class="o">)</span>
+   <span class="o">}</span>
+<span class="o">}</span> 
+</code></pre></div></div>
+<h4 id="write-skew">Write Skew</h4>
+<p>My last example in this installment demonstrates an interesting anomaly called <em><a href="http://justinjaffray.com/what-does-write-skew-look-like/">write skew</a></em>. 
+This happens when writes <em>depend</em> on reads that are invalidated by other concurrent writes.</p>
+
+<p>It is a dirty little secret that a lot of databases are not capable of preventing write skew. That’s because it 
+requires a very high transaction level called Serializable.</p>
+
+<p>The good news is, Manikin is able to detect write-skew! Here is the (canonical) black/white marble example:</p>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">MarbleId</span><span class="o">(</span><span class="n">id</span><span class="k">:</span> <span class="kt">Long</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Id</span><span class="o">[</span><span class="kt">Marble</span><span class="o">]</span> <span class="o">{</span> <span class="k">def</span> <span class="nf">init</span> <span class="k">=</span> <span class="nc">Marble</span><span class="o">()</span> <span class="o">}</span>
+<span class="k">case</span> <span class="k">class</span> <span class="nc">AlignId</span> <span class="o">(</span><span class="n">id</span><span class="k">:</span> <span class="kt">Long</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Id</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span>   <span class="o">{</span> <span class="k">def</span> <span class="nf">init</span> <span class="k">=</span> <span class="o">{</span> <span class="o">}</span> <span class="o">}</span>
+
+<span class="k">case</span> <span class="k">class</span> <span class="nc">Marble</span><span class="o">(</span><span class="n">color</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="s">"blue"</span><span class="o">)</span>
+
+<span class="k">trait</span> <span class="nc">MarbleMsg</span> <span class="k">extends</span> <span class="nc">ScalaMessage</span><span class="o">[</span><span class="kt">MarbleId</span>, <span class="kt">Marble</span>, <span class="kt">Unit</span><span class="o">]</span>
+<span class="k">trait</span> <span class="nc">AlignMsg</span>  <span class="k">extends</span> <span class="nc">ScalaMessage</span><span class="o">[</span><span class="kt">AlignId</span>, <span class="kt">Unit</span>, <span class="kt">Unit</span><span class="o">]</span>
+
+<span class="k">case</span> <span class="k">class</span> <span class="nc">SetColor</span><span class="o">(</span><span class="n">color</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">MarbleMsg</span> <span class="o">{</span>
+   <span class="k">def</span> <span class="nf">scala</span> <span class="k">=</span>
+      <span class="n">pre</span> <span class="o">{</span> <span class="n">color</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">}.</span>
+      <span class="n">app</span> <span class="o">{</span> <span class="nv">obj</span><span class="o">.</span><span class="py">copy</span><span class="o">(</span><span class="n">color</span> <span class="k">=</span> <span class="n">color</span><span class="o">)</span> <span class="o">}.</span>
+      <span class="n">eff</span> <span class="o">{</span> <span class="o">}.</span>
+      <span class="n">pst</span> <span class="o">{</span> <span class="nv">obj</span><span class="o">.</span><span class="py">color</span> <span class="o">==</span> <span class="n">color</span> <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="k">case</span> <span class="k">class</span> <span class="nc">AlignColors</span><span class="o">(</span><span class="n">m1</span><span class="k">:</span> <span class="kt">MarbleId</span><span class="o">,</span> <span class="n">m2</span><span class="k">:</span> <span class="kt">MarbleId</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">AlignMsg</span> <span class="o">{</span>
+   <span class="k">def</span> <span class="nf">scala</span> <span class="k">=</span>
+      <span class="n">pre</span> <span class="o">{</span> <span class="n">m1</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">m2</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">}.</span>
+      <span class="n">app</span> <span class="o">{</span> <span class="o">}.</span>
+      <span class="n">eff</span> <span class="o">{</span> <span class="nf">if</span> <span class="o">(</span><span class="nf">obj</span><span class="o">(</span><span class="n">m1</span><span class="o">).</span><span class="py">color</span> <span class="o">!=</span> <span class="nf">obj</span><span class="o">(</span><span class="n">m2</span><span class="o">).</span><span class="py">color</span><span class="o">)</span> <span class="nf">send</span><span class="o">(</span><span class="n">m1</span><span class="o">,</span> <span class="nc">SetColor</span><span class="o">(</span><span class="nf">obj</span><span class="o">(</span><span class="n">m2</span><span class="o">).</span><span class="py">color</span><span class="o">))</span> <span class="o">}.</span>
+      <span class="n">pst</span> <span class="o">{</span> <span class="kc">true</span> <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<p>The write-skew anomaly happens when we try to align colors between marbles concurrently, but in a different order:</p>
+
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">m1</span> <span class="k">=</span> <span class="nc">MarbleId</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span>
+<span class="k">val</span> <span class="nv">m2</span> <span class="k">=</span> <span class="nc">MarbleId</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span>
+<span class="k">val</span> <span class="nv">a1</span> <span class="k">=</span> <span class="nc">AlignId</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span>
+<span class="k">val</span> <span class="nv">a2</span> <span class="k">=</span> <span class="nc">AlignId</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span>
+
+<span class="k">val</span> <span class="nv">world1</span> <span class="k">=</span> <span class="nc">EventWorld</span><span class="o">().</span>
+   <span class="nf">send</span><span class="o">(</span><span class="n">m1</span><span class="o">,</span> <span class="nc">SetColor</span><span class="o">(</span><span class="s">"black"</span><span class="o">)).</span>
+   <span class="nf">send</span><span class="o">(</span><span class="n">m2</span><span class="o">,</span> <span class="nc">SetColor</span><span class="o">(</span><span class="s">"white"</span><span class="o">)).</span>
+   <span class="n">world</span>
+
+<span class="k">val</span> <span class="nv">world2</span> <span class="k">=</span> <span class="n">world1</span><span class="o">.</span>
+   <span class="nf">send</span><span class="o">(</span><span class="n">a1</span><span class="o">,</span> <span class="nc">AlignColors</span><span class="o">(</span><span class="n">m1</span><span class="o">,</span> <span class="n">m2</span><span class="o">)).</span>
+   <span class="n">world</span>
+
+<span class="k">val</span> <span class="nv">world3</span> <span class="k">=</span> <span class="n">world1</span><span class="o">.</span>
+   <span class="nf">send</span><span class="o">(</span><span class="n">a2</span><span class="o">,</span> <span class="nc">AlignColors</span><span class="o">(</span><span class="n">m2</span><span class="o">,</span> <span class="n">m1</span><span class="o">)).</span>
+   <span class="n">world</span>
+
+<span class="k">try</span> <span class="o">{</span>
+   <span class="k">val</span> <span class="nv">world4</span> <span class="k">=</span> <span class="n">world2</span> <span class="n">merge</span> <span class="n">world3</span> <span class="c1">// FAILS (WRITE-SKEW)</span>
+<span class="o">}</span>
+<span class="k">catch</span> <span class="o">{</span>
+   <span class="k">case</span> <span class="n">e</span><span class="k">:</span> <span class="kt">Exception</span> <span class="o">=&gt;</span> <span class="nf">println</span><span class="o">(</span><span class="n">e</span><span class="o">)</span>
+   <span class="c1">// CANNOT MERGE: READ/WRITE INTERSECTION Set(MarbleId(2))</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<h4 id="conclusion">Conclusion</h4>
+<ol>
+  <li>
+    <p>With Manikin we can version-control application state like we can version-control code with GIT.</p>
+  </li>
+  <li>
+    <p>But Manikin is more powerful than GIT because it tracks (semantic) read/write dependencies. This is something 
+GIT cannot do because of its snapshot semantics.</p>
+  </li>
+  <li>
+    <p>Manikin also has Serializable Snapshot Isolation (SSI) semantics, which is one of the highest transaction levels that
+can be achieved.</p>
+  </li>
+</ol>
+
+<p>So what’s next?</p>
+
+<p>In my next post I am going to dive more into the details of the EventWorld implementation.</p>
+
+  </div><a class="u-url" href="/manikin/2021/03/20/concurrent-worlds.html" hidden></a>
+</article>
+
+      </div>
+    </main>
+  
+  </body>
+
+</html>
