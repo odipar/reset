@@ -47,9 +47,9 @@ We can create other number sets by combining 3 set operators, *intersect* `&`, *
 Here are some examples:
 ```javascript
 1|2|3|4 & 3|4|5|6 == 3|4
->2 & number == number
+>2 & number == >2
 number & !4 == <4|>4
->4 | >8 == >8
+>4 | >8 == >4
 !(1|2) & number == <1|(>1 & <2)|>2
 1 & 2 == _|_
 ```           
