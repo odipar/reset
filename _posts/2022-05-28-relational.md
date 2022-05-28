@@ -54,7 +54,7 @@ There are two important rules to remember when intersecting relations:
 * `&` distributes over `|`
 * `&` distributes over tuples/values
 
-By abiding to these rules, the *meet* operator `&` adheres to the Greatest Lower Property of ReSeT's relational lattice.
+By abiding to these rules, the *meet* operator `&` adheres to the Greatest Lower Bound property of ReSeT's relational lattice.
 #### Complex joins
 Now let's try to intersect some more interesting relations. Here is working [example](https://cuelang.org/play/?id=TCFw0ZL5DN9#cue@export@cue) that I created in CUE.
 ```javascript
