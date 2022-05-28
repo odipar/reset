@@ -56,7 +56,7 @@ There are two important rules to remember when intersecting relations:
 
 By abiding to these rules, the *meet* operator `&` adheres to the Greatest Lower Bound property of ReSeT's relational lattice.
 #### Complex joins
-Now let's try to intersect some more interesting relations. Here is working [example](https://cuelang.org/play/?id=TCFw0ZL5DN9#cue@export@cue) that I created in CUE.
+Now let's try to intersect some more interesting relations. Here is working [example](https://cuelang.org/play/?id=TCFw0ZL5DN9#cue@export@cue) that I created in CUE:
 ```javascript
 A: 
  {a:0, b:1} | 
@@ -131,7 +131,7 @@ A: {a: 1} | {a: 2}
 B: !A => 
   !({a: 1} | {a: 2}) => // applying de morgan
   !{a: 1} & !{a: 2}  => // to canonical
-  !{<a:_, a:1, >a: _} & !{<a:_, a:2, >a: _} => // distribute negate !
+  !{<a:_, a:1, >a: _} & !{<a:_, a:2, >a: _} => // distribute negate
   {<a:!_, a:!1, >a: !_} & {<a:!_, a:!2, >a: !_} =>
   {<a: _|_, a: <1|>1, >a: _|_} & {<a: _|_, a: <2|>2, >a: _|_} =>
   {<a: _|_, a: <1|>1 & <2|>2, >a: _|_}
