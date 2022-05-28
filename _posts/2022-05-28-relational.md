@@ -32,7 +32,7 @@ So in the case of `R5`, we cannot reduce to a smaller relation, otherwise we wou
 Of course, one can think of other upper bounds, for example `U1` and `U2`:
 ```javascript
 U1: {a: 1|2|3}
-U2: {a: >=1 & a:<=3}
+U2: {a: >=1 & <=3}
 ```
 #### Intersection
 Interestingly enough, we can join two relations by intersecting them with `&`.
