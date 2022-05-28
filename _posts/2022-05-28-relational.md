@@ -22,7 +22,7 @@ We can build more complex relations, by taking the union, or by *joining* them t
 ```javascript
 R5: R1 | R2 | R3 => {a:1} | {a:2} | {a:3}
 ```
-Note that `R123` is a relation itself.
+Note that `R5` is a relation itself.
                     
 #### Least Upper Bound
 But it seems that nothing really happened! That's because both CUE and ReSeT must adhere to the Least Upper Bound (LUB) 
