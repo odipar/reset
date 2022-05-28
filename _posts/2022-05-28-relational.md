@@ -48,7 +48,7 @@ R54: R5 & R6 => ({a:1} | {a:2} | {a:3}) & {a:>1} =>
                 {a:2} | {a:3}
 ```
 Notice that tuples that contain `_|_` will be reduced to `_|_` and ultimately dropped from the disjunction. 
-#### Greatest Lower Bound (GLB)
+#### Greatest Lower Bound
 There are two important rules to remember when intersecting relations:
 
 * `&` distributes over `|`
