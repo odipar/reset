@@ -130,14 +130,14 @@ A: {a: 1} | {a: 2}
 
 B: !A => 
   !({a: 1} | {a: 2}) => (applying De Morgan) 
-  !{a: 1} & !{a: 2}  => 
+  !{a: 1} & !{a: 2}  => (to canonical)
   {<a: _|_, a: <1|>1, >a: _|_} & {<a: _|_, a: <2|>2, >a: _|_} =>
   {<a: _|_, a: <1|>1 & <2|>2, >a: _|_}
 
 C: !B => 
   {<a: _|_, a: <1|>1 & <2|>2, >a: _|_} => 
   {<a: !_|_, a: !(<1|>1 & <2|>2), >a: !_|_} =>
-  {<a: _, a: 1|2, >a: _} =>
+  {<a: _, a: 1|2, >a: _} => (to non-canonical)
   {a: 1|2}
 ```
 That said, `!!A` is still an upper bound of `A` which is good enough.
